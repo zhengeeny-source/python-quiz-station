@@ -1,0 +1,30 @@
+[
+  {
+    "title": "下面代码输出什么？\n\n```python\ns = \"Python is fun\"\nprint(s.replace(\"fun\", \"powerful\"))\n```",
+    "option_a": "Python is fun",
+    "option_b": "Python is powerful",
+    "option_c": "fun",
+    "option_d": "程序报错",
+    "answer": "B",
+    "analysis": "str.replace(old, new) 返回替换后的新字符串，因此输出 Python is powerful；原字符串本身不会被修改。"
+  },
+  {
+    "title": "表达式 `list(range(1, 5))` 的结果是？",
+    "option_a": "[1, 2, 3, 4]",
+    "option_b": "[1, 2, 3, 4, 5]",
+    "option_c": "[0, 1, 2, 3, 4]",
+    "option_d": "[2, 3, 4, 5]",
+    "answer": "A",
+    "analysis": "range 的结束值不包含在序列中，所以 5 不会出现。"
+  },
+  {
+    "title": "下面代码输出什么？\n\n```python\nnumbers = [1, 2]\nresult = numbers.append(3)\nprint(result)\n```",
+    "option_a": "[1, 2, 3]",
+    "option_b": "3",
+    "option_c": "None",
+    "option_d": "程序报错",
+    "answer": "C",
+    "analysis": "list.append 会原地修改列表，但该方法的返回值是 None。"
+  }
+]
+
