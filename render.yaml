@@ -12,7 +12,7 @@ services:
       - key: DATABASE_URL
         value: sqlite:///./python_quiz.db
       - key: CORS_ORIGINS
-        sync: false
+        value: https://python-quiz-web.onrender.com
 
   - type: web
     name: python-quiz-web
@@ -22,9 +22,8 @@ services:
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false
+        value: https://python-quiz-api.onrender.com
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
-
