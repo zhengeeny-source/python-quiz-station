@@ -1,9 +1,14 @@
 """题目 API 的核心流程测试。"""
 
+import re
+
 import app.main as main_module
 from app.database import Base, get_db
 from app.main import app
-from sqlalchemy import create_engine
+from app.models import AnswerRecord, AppMetadata, Question
+from app.question_bank import QUESTION_BANK_VERSION
+from app.seed import seed_questions
+from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
@@ -83,6 +88,13 @@ def test_add_question_and_validation() -> None:
 
         invalid = {**payload, "answer": "E"}
         assert client.post("/api/question/add", json=invalid).status_code == 422
+
+        visually_duplicated = {
+            **payload,
+            "option_c": "第一行\n第二行",
+            "option_d": "第一行 第二行",
+        }
+        assert client.post("/api/question/add", json=visually_duplicated).status_code == 422
 
 
 def test_unknown_question_returns_404() -> None:
@@ -184,3 +196,30 @@ def test_account_login_and_persistent_progress() -> None:
         # 登录账号抽题时会自动排除已经完成过的题目。
         next_question = client.get("/api/question/random?stage=1", headers=headers).json()
         assert next_question["id"] != first_question["id"]
+
+
+def test_question_bank_upgrade_preserves_progress() -> None:
+    """修正内置题时必须原位更新，不能因重建题库删除用户历史。"""
+    with TestingSession() as db:
+        record = db.scalar(select(AnswerRecord).limit(1))
+        assert record is not None
+        question_id = record.question_id
+        history_count = db.scalar(select(func.count(AnswerRecord.id)))
+
+        version = db.get(AppMetadata, "question_bank_version")
+        assert version is not None
+        version.value = "outdated-test-version"
+        question = db.get(Question, question_id)
+        assert question is not None
+        question.option_d = question.option_c
+        db.commit()
+
+        seed_questions(db)
+
+        refreshed = db.get(Question, question_id)
+        assert refreshed is not None
+        options = [refreshed.option_a, refreshed.option_b, refreshed.option_c, refreshed.option_d]
+        visible = [re.sub(r"\s+", " ", option).strip() for option in options]
+        assert len(set(visible)) == 4
+        assert db.scalar(select(func.count(AnswerRecord.id))) == history_count
+        assert db.get(AppMetadata, "question_bank_version").value == QUESTION_BANK_VERSION

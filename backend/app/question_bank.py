@@ -32,7 +32,7 @@ STAGES = {
 }
 QUESTIONS_PER_STAGE = 1_000
 TOTAL_QUESTIONS = len(STAGES) * QUESTIONS_PER_STAGE
-QUESTION_BANK_VERSION = "2026.10-structural-unique-v3"
+QUESTION_BANK_VERSION = "2026.10-structural-unique-v4"
 LETTERS = "ABCD"
 CODE_PATTERN = re.compile(r"```python\n(.*?)\n```", re.DOTALL)
 
@@ -129,6 +129,11 @@ def _choice_text(value: object) -> str:
     return str(value)
 
 
+def visible_choice_signature(value: object) -> str:
+    """按页面可见效果归一化选项，避免换行和空格看起来完全相同。"""
+    return re.sub(r"\s+", " ", _choice_text(value)).strip()
+
+
 def _generic_distractors(correct: str) -> list[str]:
     candidates: list[str] = []
     stripped = correct.strip()
@@ -179,10 +184,13 @@ def _make_question(
     else:
         prompt = draft.prompt
         choices = [correct]
+        visible_choices = {visible_choice_signature(correct)}
         for item in [*draft.distractors, *_generic_distractors(correct)]:
             text = _choice_text(item)
-            if text not in choices:
+            signature = visible_choice_signature(text)
+            if text not in choices and signature not in visible_choices:
                 choices.append(text)
+                visible_choices.add(signature)
             if len(choices) == 4:
                 break
         if len(choices) != 4:

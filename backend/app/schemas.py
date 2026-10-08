@@ -1,6 +1,7 @@
 """API 请求和响应的数据结构。"""
 
 from datetime import datetime
+import re
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -53,6 +54,10 @@ class QuestionBase(BaseModel):
         if self.question_type == "single_choice":
             if not all([self.option_a, self.option_b, self.option_c, self.option_d]):
                 raise ValueError("选择题必须填写 A、B、C、D 四个选项")
+            options = [self.option_a, self.option_b, self.option_c, self.option_d]
+            visible_options = [re.sub(r"\s+", " ", option).strip() for option in options]
+            if len(set(visible_options)) != 4:
+                raise ValueError("选择题的四个选项必须明显不同，不能只靠空格或换行区分")
         elif self.question_type == "true_false":
             if self.answer not in {"A", "B"}:
                 raise ValueError("判断题答案只能是 A（正确）或 B（错误）")

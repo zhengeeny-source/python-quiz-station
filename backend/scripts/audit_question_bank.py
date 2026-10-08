@@ -11,6 +11,7 @@ from app.question_bank import (
     _choice_text,
     _run,
     generate_question_bank_with_metadata,
+    visible_choice_signature,
 )
 
 
@@ -44,6 +45,10 @@ def main() -> None:
 
         if question_type == "single_choice":
             assert _correct_option(question) == expected_answer, f"第 {index} 题选择答案错误"
+            options = [str(question[f"option_{letter.lower()}"]) for letter in LETTERS]
+            signatures = [visible_choice_signature(option) for option in options]
+            assert len(set(options)) == 4, f"第 {index} 题存在完全重复的选项"
+            assert len(set(signatures)) == 4, f"第 {index} 题存在视觉上无法区分的选项"
         elif question_type == "fill_blank":
             accepted = json.loads(str(question["accepted_answers"]))
             assert expected_answer in accepted, f"第 {index} 题填空答案错误"
