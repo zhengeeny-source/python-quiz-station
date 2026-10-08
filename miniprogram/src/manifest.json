@@ -2,8 +2,8 @@
   "name": "Python刷题小站",
   "appid": "wx77b2c0e1b63f9fb7",
   "description": "面向 Python 初学者的刷题小程序",
-  "versionName": "1.0.0",
-  "versionCode": "100",
+  "versionName": "1.0.1",
+  "versionCode": "101",
   "transformPx": false,
   "mp-weixin": {
     "appid": "wx77b2c0e1b63f9fb7",

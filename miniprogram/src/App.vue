@@ -5,6 +5,11 @@ export default {
   onLaunch() {
     initializeAuth()
   },
+  onPageNotFound() {
+    // 兼容旧二维码、旧分享卡片或后台曾配置过的失效页面路径。
+    // 微信要求在该生命周期中同步发起重定向，不能放进定时器。
+    uni.reLaunch({ url: '/pages/quiz/index' })
+  },
 }
 </script>
 
