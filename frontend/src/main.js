@@ -19,6 +19,7 @@ import 'highlight.js/styles/github-dark.css'
 
 import App from './App.vue'
 import router from './router'
+import { initializeAuth } from './stores/auth'
 import './styles.css'
 
 const app = createApp(App)
@@ -40,3 +41,4 @@ const elementComponents = [
 
 elementComponents.forEach((component) => app.component(component.name, component))
 app.use(router).mount('#app')
+initializeAuth()

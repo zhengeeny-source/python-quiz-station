@@ -6,6 +6,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { checkAnswer, getRandomQuestion, readableApiError } from '../api/questions'
 import MarkdownContent from '../components/MarkdownContent.vue'
 import QuizOption from '../components/QuizOption.vue'
+import { authState } from '../stores/auth'
 import {
   configureSession,
   quizSession,
@@ -40,7 +41,9 @@ const stages = [
 
 const options = computed(() => {
   if (!question.value) return []
-  return ['A', 'B', 'C', 'D'].map((label) => ({
+  if (question.value.question_type === 'fill_blank') return []
+  const labels = question.value.question_type === 'true_false' ? ['A', 'B'] : ['A', 'B', 'C', 'D']
+  return labels.map((label) => ({
     label,
     content: question.value[`option_${label.toLowerCase()}`],
   }))
@@ -81,6 +84,12 @@ function optionStatus(label) {
     wrong: selectedAnswer.value === label && !result.value.is_correct,
   }
 }
+
+const questionTypeLabel = computed(() => ({
+  single_choice: '单选题',
+  true_false: '判断题',
+  fill_blank: '填空题',
+}[question.value?.question_type] || '练习题'))
 
 async function submitAnswer() {
   if (!selectedAnswer.value) {
@@ -157,7 +166,10 @@ onMounted(() => {
       <div>
         <span class="eyebrow">10,000 道新手练习题</span>
         <h1>一步一步学 Python</h1>
-        <p>选择学习阶段，读题后提交答案，立即获得判题和解析。</p>
+        <p v-if="authState.user">已登录为 {{ authState.user.username }}，答题记录会自动保存并跳过已做题目。</p>
+        <p v-else>
+          当前为访客模式；<router-link class="inline-link" to="/login">登录账号</router-link>后可将进度保存到云端。
+        </p>
       </div>
       <div class="session-summary" aria-label="本轮答题统计">
         <span>已答 <strong>{{ sessionStats.total.value }}</strong></span>
@@ -201,12 +213,12 @@ onMounted(() => {
     <article v-else-if="question" class="question-card">
       <div class="question-meta">
         <span>第 {{ sessionStats.total.value + (result ? 0 : 1) }} / {{ quizSession.target }} 题</span>
-        <span>单选题</span>
+        <span>{{ questionTypeLabel }}</span>
       </div>
 
       <MarkdownContent class="question-title" :content="question.title" />
 
-      <div class="options-grid" role="radiogroup" aria-label="答案选项">
+      <div v-if="question.question_type !== 'fill_blank'" class="options-grid" role="radiogroup" aria-label="答案选项">
         <QuizOption
           v-for="option in options"
           :key="option.label"
@@ -220,13 +232,30 @@ onMounted(() => {
         />
       </div>
 
+      <div v-else class="fill-answer">
+        <label for="fill-answer-input">填写运行结果</label>
+        <el-input
+          id="fill-answer-input"
+          v-model="selectedAnswer"
+          type="textarea"
+          :rows="4"
+          :disabled="Boolean(result)"
+          placeholder="请输入答案；多行输出可以直接换行，也可以使用 \n"
+          @keydown.ctrl.enter="submitAnswer"
+          @keydown.meta.enter="submitAnswer"
+        />
+      </div>
+
       <transition name="feedback">
         <div v-if="result" class="answer-feedback" :class="result.is_correct ? 'success' : 'error'">
           <div class="feedback-heading">
             <span class="feedback-icon">{{ result.is_correct ? '✓' : '×' }}</span>
             <div>
               <strong>{{ result.is_correct ? '回答正确！' : '回答错误' }}</strong>
-              <p v-if="!result.is_correct">正确答案是 {{ result.correct_answer }}</p>
+              <p v-if="!result.is_correct">
+                正确答案是
+                <code>{{ result.correct_answer }}</code>
+              </p>
             </div>
           </div>
           <div class="analysis-block">
@@ -250,4 +279,3 @@ onMounted(() => {
     </article>
   </section>
 </template>
-

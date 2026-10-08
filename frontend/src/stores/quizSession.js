@@ -1,6 +1,19 @@
 import { computed, reactive } from 'vue'
 
-const STORAGE_KEY = 'python-quiz-session-v1'
+const STORAGE_PREFIX = 'python-quiz-session-v2'
+let activeOwner = 'guest'
+try {
+  const cachedUser = JSON.parse(localStorage.getItem('python-quiz-auth-user-v1'))
+  if (cachedUser?.id && localStorage.getItem('python-quiz-auth-token-v1')) {
+    activeOwner = `user-${cachedUser.id}`
+  }
+} catch {
+  activeOwner = 'guest'
+}
+
+function storageKey() {
+  return `${STORAGE_PREFIX}:${activeOwner}`
+}
 
 const initialState = {
   stage: 1,
@@ -9,9 +22,9 @@ const initialState = {
   startedAt: null,
 }
 
-function loadState() {
+function loadState(owner = activeOwner) {
   try {
-    const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY))
+    const saved = JSON.parse(localStorage.getItem(`${STORAGE_PREFIX}:${owner}`))
     if (saved && Array.isArray(saved.history)) {
       return { ...initialState, ...saved }
     }
@@ -35,7 +48,12 @@ export const sessionStats = {
 }
 
 function persist() {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(quizSession))
+  localStorage.setItem(storageKey(), JSON.stringify(quizSession))
+}
+
+export function switchSessionOwner(user) {
+  activeOwner = user ? `user-${user.id}` : 'guest'
+  Object.assign(quizSession, loadState(activeOwner))
 }
 
 export function configureSession({ stage, target }) {
@@ -61,3 +79,6 @@ export function resetSession({ keepSettings = true } = {}) {
   persist()
 }
 
+window.addEventListener('quiz-auth-changed', (event) => {
+  switchSessionOwner(event.detail)
+})

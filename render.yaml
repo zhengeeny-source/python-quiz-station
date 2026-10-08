@@ -10,7 +10,11 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        value: sqlite:///./python_quiz.db
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TOKEN_EXPIRE_DAYS
+        value: "30"
       - key: CORS_ORIGINS
         value: https://python-quiz-web.onrender.com
 

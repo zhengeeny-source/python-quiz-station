@@ -58,7 +58,10 @@ def test_quiz_flow() -> None:
         )
         assert check_response.status_code == 200
         result = check_response.json()
-        assert result["correct_answer"] in ["A", "B", "C", "D"]
+        if question["question_type"] == "fill_blank":
+            assert result["correct_answer"].strip()
+        else:
+            assert result["correct_answer"] in ["A", "B", "C", "D"]
         assert isinstance(result["is_correct"], bool)
         assert result["analysis"]
 
@@ -89,3 +92,95 @@ def test_unknown_question_returns_404() -> None:
             json={"question_id": 999999, "selected_answer": "A"},
         )
         assert response.status_code == 404
+
+
+def test_true_false_and_fill_blank_flow() -> None:
+    with TestClient(app) as client:
+        questions = client.get("/api/question/list").json()
+        true_false = next(item for item in questions if item["question_type"] == "true_false")
+        fill_blank = next(item for item in questions if item["question_type"] == "fill_blank")
+
+        assert true_false["option_a"] == "正确"
+        assert true_false["option_b"] == "错误"
+        assert fill_blank["option_a"] == ""
+
+        true_result = client.post(
+            "/api/question/check",
+            json={"question_id": true_false["id"], "selected_answer": "A"},
+        )
+        assert true_result.status_code == 200
+        assert true_result.json()["question_type"] == "true_false"
+
+        # 错误提交会安全地返回填空题标准答案，再用标准答案复核必须判为正确。
+        first_try = client.post(
+            "/api/question/check",
+            json={"question_id": fill_blank["id"], "selected_answer": "wrong"},
+        )
+        assert first_try.status_code == 200
+        correct = first_try.json()["correct_answer"]
+        second_try = client.post(
+            "/api/question/check",
+            json={"question_id": fill_blank["id"], "selected_answer": correct},
+        )
+        assert second_try.json()["is_correct"] is True
+
+
+def test_add_fill_blank_question() -> None:
+    payload = {
+        "question_type": "fill_blank",
+        "title": "`print(1 + 1)` 的输出是什么？",
+        "answer": "A",
+        "analysis": "整数相加得到 2。",
+        "accepted_answers": ["2"],
+    }
+    with TestClient(app) as client:
+        created = client.post("/api/question/add", json=payload)
+        assert created.status_code == 201
+        question_id = created.json()["id"]
+        result = client.post(
+            "/api/question/check",
+            json={"question_id": question_id, "selected_answer": " 2 "},
+        )
+        assert result.status_code == 200
+        assert result.json()["is_correct"] is True
+
+
+def test_account_login_and_persistent_progress() -> None:
+    credentials = {"username": "learner_01", "password": "safe-password-123"}
+    with TestClient(app) as client:
+        registered = client.post("/api/auth/register", json=credentials)
+        assert registered.status_code == 201
+        body = registered.json()
+        assert body["token_type"] == "bearer"
+        assert body["user"]["username"] == credentials["username"]
+        assert "password" not in body["user"]
+
+        assert client.post("/api/auth/register", json=credentials).status_code == 409
+        assert client.post(
+            "/api/auth/login",
+            json={**credentials, "password": "wrong-password"},
+        ).status_code == 401
+
+        logged_in = client.post("/api/auth/login", json=credentials)
+        assert logged_in.status_code == 200
+        headers = {"Authorization": f"Bearer {logged_in.json()['access_token']}"}
+        assert client.get("/api/auth/me", headers=headers).status_code == 200
+
+        first_question = client.get("/api/question/random?stage=1", headers=headers).json()
+        checked = client.post(
+            "/api/question/check",
+            headers=headers,
+            json={"question_id": first_question["id"], "selected_answer": "A"},
+        )
+        assert checked.status_code == 200
+
+        summary = client.get("/api/progress/summary", headers=headers).json()
+        assert summary["total_answered"] == 1
+        assert summary["unique_questions"] == 1
+        history = client.get("/api/progress/history", headers=headers).json()
+        assert len(history) == 1
+        assert history[0]["question_id"] == first_question["id"]
+
+        # 登录账号抽题时会自动排除已经完成过的题目。
+        next_question = client.get("/api/question/random?stage=1", headers=headers).json()
+        assert next_question["id"] != first_question["id"]
