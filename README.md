@@ -1,7 +1,8 @@
 # Python 刷题小站
 
-一个面向 Python 初学者的前后端分离刷题 Web App。前端使用 Vue 3、Vite 和 Element Plus，
-后端使用 FastAPI、SQLAlchemy 和 SQLite；通过环境变量可以切换到 PostgreSQL 或 MySQL。
+一个面向 Python 初学者的前后端分离刷题应用。包含 Vue 3 + Vite + Element Plus 网页版和
+uni-app + Vue 3 + Vite 微信小程序版；两端共用 FastAPI API、账号、题库和学习进度。
+后端使用 SQLAlchemy 和 SQLite，通过环境变量可以切换到 PostgreSQL 或 MySQL。
 
 ## 已实现功能
 
@@ -14,6 +15,7 @@
   已保存的答题记录不会到期或清空；
 - 登录后每次答题自动保存，支持跨浏览器查看累计正确率和最近记录；
 - 登录账号抽题时自动排除已经做过的题目；访客仍可直接练习；
+- 微信小程序版包含刷题、统计、账号和录题四个原生页面，与网站共享数据；
 - 10 个新手学习阶段，可选择综合练习或指定阶段，每轮 10/20/50 题；
 - 首次启动自动生成并批量写入 10,000 道原创题，每阶段 1,000 道；
 - AST 结构去重会忽略数字、字符串和变量名，禁止“只换参数”的伪新题；
@@ -47,9 +49,15 @@ python-quiz-station/
 │   │   ├── stores/                 # 本轮统计状态
 │   │   └── views/                  # 刷题、统计、新增题目页
 │   └── package.json
+├── miniprogram/
+│   ├── src/pages/                   # 刷题、统计、账号、录题页面
+│   ├── src/api/                     # uni.request API 封装
+│   ├── src/stores/                  # 小程序账号与本轮状态
+│   └── package.json                 # 微信小程序编译脚本
 ├── samples/sample_questions.json   # 测试用样例题
 ├── DATASET.md                      # 学习路线与题库说明
 ├── DEPLOYMENT.md                   # Render 部署说明
+├── MINIPROGRAM.md                  # 微信小程序开发与发布说明
 └── render.yaml                     # Render Blueprint
 ```
 
@@ -131,6 +139,22 @@ jq '.[0]' samples/sample_questions.json | \
 
 样例文件是数组，而接口一次接收一道题；上面的 `jq` 命令会取出第一道。也可以直接使用网页录入页。
 
+## 微信小程序开发
+
+```bash
+cd miniprogram
+npm install
+npm run dev:mp-weixin
+```
+
+然后在微信开发者工具中导入 `miniprogram/dist/dev/mp-weixin`。生产构建使用：
+
+```bash
+npm run build:mp-weixin
+```
+
+完整的 AppID、服务器域名和提审步骤见 [MINIPROGRAM.md](./MINIPROGRAM.md)。
+
 ## 运行测试与构建检查
 
 ```bash
@@ -141,6 +165,9 @@ pytest -q
 
 cd ../frontend
 npm run build
+
+cd ../miniprogram
+npm run build:mp-weixin
 ```
 
 ## 配置说明

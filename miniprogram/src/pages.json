@@ -1,0 +1,46 @@
+{
+  "pages": [
+    {
+      "path": "pages/quiz/index",
+      "style": {
+        "navigationBarTitleText": "Python刷题小站"
+      }
+    },
+    {
+      "path": "pages/stats/index",
+      "style": {
+        "navigationBarTitleText": "学习统计"
+      }
+    },
+    {
+      "path": "pages/account/index",
+      "style": {
+        "navigationBarTitleText": "学习账号"
+      }
+    },
+    {
+      "path": "pages/add/index",
+      "style": {
+        "navigationBarTitleText": "新增题目"
+      }
+    }
+  ],
+  "tabBar": {
+    "color": "#667085",
+    "selectedColor": "#2563eb",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/quiz/index", "text": "刷题" },
+      { "pagePath": "pages/stats/index", "text": "统计" },
+      { "pagePath": "pages/account/index", "text": "账号" },
+      { "pagePath": "pages/add/index", "text": "录题" }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "Python刷题小站",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f5f7fb"
+  }
+}
