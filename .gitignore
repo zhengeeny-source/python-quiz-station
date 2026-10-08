@@ -15,9 +15,9 @@ frontend/.vite/
 # Environment variables
 .env
 *.env.local
+.neon
 
 # Editors and operating systems
 .DS_Store
 .idea/
 .vscode/
-
